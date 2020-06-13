@@ -5,7 +5,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
-    gameDataList.append(new GameData(this));
+    timer.start();
+    gameDataList.append(new GameData(timer.elapsed(), this));
     connect(&server, &TcpServer::connection, this, &MainWindow::connection);
     connect(&server, &TcpServer::receive, this, &MainWindow::receive);
     connect(&server, &TcpServer::disconnected, this, &MainWindow::disconnected);
@@ -25,24 +26,47 @@ void MainWindow::connection(TcpSocket *client) {
 
 void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
     (void)count;
-    ui->textEdit->append("客户发送了消息");
+    //QElapsedTimer thhtt;
+    //ui->textEdit->append("客户发送了消息");
+    GameData *localGameData = gameDataList[client->index];
+    client->lastReceiveTime = timer.elapsed();
     switch(signal) {
-        case 0:
-            structure_initData *d = (structure_initData *)data;
-            client->powerLevel = d->powerLevel;
-            if(client->line != d->line) {
-                moveLine(client, d->line);
+        case 0: {
+            structure_initData *receiveData = (structure_initData *)data;
+            client->powerLevel = receiveData->powerLevel;
+            if(client->line != receiveData->line) {
+                localGameData = moveLine(client, receiveData->line);
             }
-            qDebug("%d %d", d->powerLevel, d->line);
+            QByteArray userIdByte(receiveData->userId, sizeof(receiveData->userId));
+            client->userId = userIdByte.toHex();
+            structure_allGameData sendData;
+            sendData.time = localGameData->time;
+            Buffer *sendBuffer = server.getSendBuffer(0, sizeof(sendData));
+            server.writeBuffer(&sendBuffer, (char *)&sendData, sizeof(sendData));
+            server.sendBuffer(client, sendBuffer);
+            //qDebug("%d %d", d->powerLevel, d->line);
+            //qDebug("");
             break;
+        }
+        case 1: {
+            structure_pingData *receiveData = (structure_pingData *)data;
+            structure_pingData sendData;
+            sendData.time = receiveData->time;
+            Buffer *sendBuffer = server.getSendBuffer(1, sizeof(sendData));
+            server.writeBuffer(&sendBuffer, (char *)&sendData, sizeof(sendData));
+            server.sendBuffer(client, sendBuffer);
+            break;
+        }
     }
 }
 
 void MainWindow::disconnected(TcpSocket *client) {
-    ui->textEdit->append("客户离开");
+    GameData *localGameData = gameDataList[client->index];
+    localGameData->removeClient(client);
+    //ui->textEdit->append("客户离开");
 }
 
-void MainWindow::moveLine(TcpSocket *client, int line) {
+GameData *MainWindow::moveLine(TcpSocket *client, int line) {
     GameData *oldGameData = gameDataList[client->index];
     GameData *newGameData;
     for(int i = 0; i < gameDataList.count(); i++) {
@@ -52,15 +76,22 @@ void MainWindow::moveLine(TcpSocket *client, int line) {
             client->index = i;
             client->line = line;
             newGameData->appendClient(client);
-            return;
+            return newGameData;
         }
     }
-    newGameData = new GameData(this);
+    newGameData = new GameData(timer.elapsed(), this);
     newGameData->line = line;
     oldGameData->removeClient(client);
     client->index = gameDataList.count();
     client->line = line;
     gameDataList.append(newGameData);
     newGameData->appendClient(client);
+    return newGameData;
 }
+
+
+
+
+
+
 

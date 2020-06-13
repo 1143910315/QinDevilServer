@@ -1,5 +1,6 @@
 #ifndef TCPSOCKET_H
 #define TCPSOCKET_H
+#include <QDateTime>
 #include <QTcpSocket>
 #include "bufferlist.h"
 #include "aes.h"
@@ -12,6 +13,9 @@ public:
     int id;
     int line;
     int powerLevel;
+    int index;
+    QString userId;
+    qint64 lastReceiveTime;
 protected slots:
     void receiveData();
 private:

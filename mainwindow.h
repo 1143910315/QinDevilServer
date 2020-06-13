@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QElapsedTimer>
 #include "tcpserver.h"
 #include "gamedata.h"
 QT_BEGIN_NAMESPACE
@@ -21,10 +22,12 @@ protected slots:
     void receive(TcpSocket *client, int signal, char *data, int count);
     void disconnected(TcpSocket *client);
 private:
+    QDateTime strat;
+    QElapsedTimer timer;
     Ui::MainWindow *ui;
     TcpServer server;
     QVector<GameData *> gameDataList;
     int id = 0;
-    void moveLine(TcpSocket *client, int line);
+    GameData *moveLine(TcpSocket *client, int line);
 };
 #endif // MAINWINDOW_H

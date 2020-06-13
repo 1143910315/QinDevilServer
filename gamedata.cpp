@@ -1,6 +1,6 @@
 #include "gamedata.h"
 
-GameData::GameData(QObject *parent) : QObject(parent) {
+GameData::GameData(long long time, QObject *parent) : QObject(parent),time(time) {
 }
 
 void GameData::appendClient(TcpSocket *client) {

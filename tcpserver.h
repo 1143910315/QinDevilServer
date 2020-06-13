@@ -7,7 +7,8 @@ class TcpServer : public QTcpServer {
     Q_OBJECT
 public:
     explicit TcpServer(QObject *parent = nullptr);
-    Buffer *getSendBuff(int signal, uint length);
+    Buffer *getSendBuffer(int signal, uint length);
+    void writeBuffer(Buffer **buffer, char *data, int dataLength);
     void sendBuffer(TcpSocket *client, Buffer *buffer);
 protected:
     void incomingConnection(qintptr handle) override;

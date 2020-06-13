@@ -6,9 +6,11 @@
 class GameData : public QObject {
     Q_OBJECT
 public:
-    explicit GameData(QObject *parent = nullptr);
+    explicit GameData(long long time,QObject *parent = nullptr);
     void appendClient(TcpSocket *client);
+    void removeClient(TcpSocket *client);
     int line;
+    long long time;
 private:
     QVector<TcpSocket *> clientList;
 signals:
