@@ -29,5 +29,6 @@ private:
     QVector<GameData *> gameDataList;
     int id = 0;
     GameData *moveLine(TcpSocket *client, int line);
+    QMap<int, QString> idMapName;
 };
 #endif // MAINWINDOW_H

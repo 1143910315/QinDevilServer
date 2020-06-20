@@ -16,6 +16,7 @@ public:
     int index;
     QString userId;
     qint64 lastReceiveTime;
+    QString userName;
 protected slots:
     void receiveData();
 private:

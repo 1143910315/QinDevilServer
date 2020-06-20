@@ -165,9 +165,15 @@ const unsigned char AES::Mul_0e[256] = {
 };
 
 AES::AES(QObject *parent) : QObject(parent) {
+    file = new QFile("D:/test1.txt", this);
+    file->open(QFile::WriteOnly);
 }
 
 void AES::code(char *p, int plen) {
+    file->write(p, plen);
+    file->write("\n\n---------p-----------\n\n");
+    file->write(qPrintable(QString::number(plen)));
+    file->write("\n\n--------plen------------\n\n");
     int pArray[4][4];
     for(int k = 0; k < plen; k += 16) {
         convertToIntArray(p + k, pArray);
@@ -183,10 +189,16 @@ void AES::code(char *p, int plen) {
         shiftRows(pArray);//行移位
         addRoundKey(pArray, 10);
         convertArrayToStr(pArray, p + k);
+        file->write(p, plen);
+        file->write("\n\n--------------------\n\n");
     }
 }
 
 void AES::decode(char *c, int clen) {
+    file->write(c, clen);
+    file->write("\n\n--------c------------\n\n");
+    file->write(qPrintable(QString::number(clen)));
+    file->write("\n\n--------clen------------\n\n");
     int cArray[4][4];
     for(int k = 0; k < clen; k += 16) {
         convertToIntArray(c + k, cArray);
@@ -204,6 +216,8 @@ void AES::decode(char *c, int clen) {
         deShiftRows(cArray);
         addRoundKey(cArray, 0);
         convertArrayToStr(cArray, c + k);
+        file->write(c, clen);
+        file->write("\n\n--------------------\n\n");
     }
 }
 
@@ -232,6 +246,8 @@ void AES::extendKey(const char *key) {
             w[i] = w[i - 4] ^ w[i - 1];
         }
     }
+    file->write((char *)w, 44 * 4);
+    file->write("\n\n--------w[44*4]------------\n\n");
 }
 
 void AES::convertToIntArray(char *str, int pa[4][4]) {
@@ -247,7 +263,7 @@ void AES::convertToIntArray(char *str, int pa[4][4]) {
 void AES::addRoundKey(int array[4][4], int round) {
     int warray[4];
     for(int i = 0; i < 4; i++) {
-        splitIntToArray(w[ round * 4 + i], warray);
+        splitIntToArray(w[round * 4 + i], warray);
         for(int j = 0; j < 4; j++) {
             array[j][i] = array[j][i] ^ warray[j];
         }
@@ -324,11 +340,10 @@ void AES::mixColumns(int array[4][4]) {
 
 void AES::deMixColumns(int array[4][4]) {
     int tempArray[4][4];
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < 4; i++)
         for(int j = 0; j < 4; j++) {
             tempArray[i][j] = array[i][j];
         }
-    }
     for(int i = 0; i < 4; i++) {
         for(int j = 0; j < 4; j++) {
             array[i][j] = GFMul(deColM[i][0], tempArray[0][j]) ^ GFMul(deColM[i][1], tempArray[1][j])
@@ -452,8 +467,8 @@ void AES::addRoundTowArray(int aArray[4][4], int bArray[4][4]) {
 
 int AES::T(int num, int round) {
     int lowBit = num & 0xFF;
-    unsigned char *temp = (unsigned char *)&num;
-    unsigned char *sbox = (unsigned char *)S;
+    char *temp = (char *)&num;
+    char *sbox = (char *)S;
     temp[0] = sbox[(int)temp[3]];
     temp[3] = sbox[(int)temp[2]];
     temp[2] = sbox[(int)temp[1]];
