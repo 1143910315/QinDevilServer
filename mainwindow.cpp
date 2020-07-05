@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&server, &TcpServer::receive, this, &MainWindow::receive);
     connect(&server, &TcpServer::disconnected, this, &MainWindow::disconnected);
     server.listen(QHostAddress::Any, 12580);
-    QSettings a;
+    //QSettings a;
 }
 
 MainWindow::~MainWindow() {
@@ -63,7 +63,8 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
             char *sendOriginal = new char[sendDataSize];
             structure_allGameData *sendData = (structure_allGameData *)sendOriginal;
             sendData->time = localGameData->time;
-            for(uint i = 0; i < sizeof(sendData->qinLessKey); i++) {
+            constexpr auto loop = sizeof(sendData->qinLessKey) / sizeof(unsigned short);
+            for(uint i = 0; i < loop; i++) {
                 sendData->qinLessKey[i] = localGameData->lessKey[i];
             }
             constexpr int qinForUserNameLength = sizeof(sendData->repairKey.qinForUserName) / sizeof(sendData->repairKey.qinForUserName[0].userName);
@@ -88,6 +89,9 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
             Buffer *sendBuffer = server.getSendBuffer(0, sendDataSize);
             server.writeBuffer(&sendBuffer, (char *)sendData, sendDataSize);
             server.sendBuffer(client, sendBuffer);
+            if(userName.length() > 0) {
+                sendLog(localGameData, userName + " 来了");
+            }
             //qDebug("%d %d", d->powerLevel, d->line);
             //qDebug("");
             break;
@@ -160,10 +164,24 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
                     server.sendBuffer(tempClient, sendBuffer);
                 }
             }
+            QString log = "";
+            log += client->userName;
+            if(receiveData->numberQin == 0) {
+                log += " 修改一号琴缺弦为：";
+            } else if(receiveData->numberQin == 1) {
+                log += " 修改二号琴缺弦为：";
+            } else if(receiveData->numberQin == 2) {
+                log += " 修改三号琴缺弦为：";
+            } else if(receiveData->numberQin == 3) {
+                log += " 修改四号琴缺弦为：";
+            }
+            log += QString::fromUtf16(receiveData->lessKey, -1);
+            sendLog(localGameData, log);
             break;
         }
         case 3: {
             structure_repairKey *receiveData = (structure_repairKey *)data;
+            QString log = "";
             if(receiveData->isChecked) {
                 unsigned short j = '1' + receiveData->keyId;
                 int i = 0;
@@ -171,12 +189,61 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
                     if(localGameData->qinForId[i] == 0) {
                         if(localGameData->lessKey[i + i / 3] == j) {
                             localGameData->qinForId[i] = client->id;
+                            log += client->userName;
+                            if(receiveData->keyId == 0) {
+                                log += " 补 宫 ，";
+                            } else if(receiveData->keyId == 1) {
+                                log += " 补 商 ，";
+                            } else if(receiveData->keyId == 2) {
+                                log += " 补 角 ，";
+                            } else if(receiveData->keyId == 3) {
+                                log += " 补 徵 ，";
+                            } else if(receiveData->keyId == 4) {
+                                log += " 补 羽 ，";
+                            } else {
+                                log += " 补 梦 ，";
+                            }
+                            switch(i / 3) {
+                                case 0: {
+                                    log += "且被分配到 一号琴";
+                                    break;
+                                }
+                                case 1: {
+                                    log += "且被分配到 二号琴";
+                                    break;
+                                }
+                                case 2: {
+                                    log += "且被分配到 三号琴";
+                                    break;
+                                }
+                                case 3: {
+                                    log += "且被分配到 四号琴";
+                                    break;
+                                }
+                                default: {
+                                    log += "且被分配到 鬼琴";
+                                }
+                            }
                             break;
                         }
                     }
                 }
                 if(i == 12) {
                     localGameData->appendRepairKey(client->id, receiveData->keyId);
+                    log += client->userName;
+                    if(receiveData->keyId == 0) {
+                        log += " 补 宫 ，但未分配琴";
+                    } else if(receiveData->keyId == 1) {
+                        log += " 补 商 ，但未分配琴";
+                    } else if(receiveData->keyId == 2) {
+                        log += " 补 角 ，但未分配琴";
+                    } else if(receiveData->keyId == 3) {
+                        log += " 补 徵 ，但未分配琴";
+                    } else if(receiveData->keyId == 4) {
+                        log += " 补 羽 ，但未分配琴";
+                    } else {
+                        log += " 补 梦 ，但未分配琴";
+                    }
                 }
             } else {
                 QMap<int, QString>::ConstIterator it = idMapName.constBegin();
@@ -195,6 +262,20 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
                     ++it;
                 }
                 localGameData->distributionRepairKey();
+                log += client->userName;
+                if(receiveData->keyId == 0) {
+                    log += " 放弃补 宫";
+                } else if(receiveData->keyId == 1) {
+                    log += " 放弃补 商";
+                } else if(receiveData->keyId == 2) {
+                    log += " 放弃补 角";
+                } else if(receiveData->keyId == 3) {
+                    log += " 放弃补 徵";
+                } else if(receiveData->keyId == 4) {
+                    log += " 放弃补 羽";
+                } else {
+                    log += " 放弃补 梦";
+                }
             }
             structure_repairKeyForUserName sendData;
             constexpr int qinForUserNameLength = sizeof(sendData.qinForUserName) / sizeof(sendData.qinForUserName[0].userName);
@@ -217,6 +298,7 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
                 server.writeBuffer(&sendBuffer, (char *)&sendData, sizeof(sendData));
                 server.sendBuffer(tempClient, sendBuffer);
             }
+            sendLog(localGameData, log);
             break;
         }
         case 4: {
@@ -241,7 +323,8 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
             structure_clearData sendData;
             sendData.time = localGameData->time = timer.elapsed();
             localGameData->clearRepairKey();
-            for(uint i = 0; i < sizeof(localGameData->lessKey); i++) {
+            constexpr auto loop = sizeof(localGameData->lessKey) / sizeof(unsigned short);
+            for(uint i = 0; i < loop; i++) {
                 localGameData->lessKey[i] = 0;
             }
             for(int i = 0; i < 12; i++) {
@@ -286,6 +369,19 @@ GameData *MainWindow::moveLine(TcpSocket *client, int line) {
     gameDataList.append(newGameData);
     newGameData->appendClient(client);
     return newGameData;
+}
+
+void MainWindow::sendLog(GameData *gamedata, QString logMessage) {
+    const ushort *localUtf16 = logMessage.utf16();
+    const int datalength = logMessage.length() * 2 + 2;
+    int index = 0;
+    TcpSocket *tempClient;
+    //qDebug("%s", qPrintable(logMessage));
+    while((tempClient = gamedata->getClient(index))) {
+        Buffer *sendBuffer = server.getSendBuffer(6, datalength);
+        server.writeBuffer(&sendBuffer, (char *)localUtf16, datalength);
+        server.sendBuffer(tempClient, sendBuffer);
+    }
 }
 
 

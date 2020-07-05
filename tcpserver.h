@@ -2,7 +2,7 @@
 #define TCPSERVER_H
 #include <QTcpServer>
 #include "tcpsocket.h"
-int constexpr Version = -1;
+int constexpr Version = -3;
 class TcpServer : public QTcpServer {
     Q_OBJECT
 public:

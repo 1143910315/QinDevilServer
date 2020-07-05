@@ -28,7 +28,8 @@ private:
     TcpServer server;
     QVector<GameData *> gameDataList;
     int id = 0;
-    GameData *moveLine(TcpSocket *client, int line);
     QMap<int, QString> idMapName;
+    GameData *moveLine(TcpSocket *client, int line);
+    void sendLog(GameData *gamedata, QString logMessage);
 };
 #endif // MAINWINDOW_H
