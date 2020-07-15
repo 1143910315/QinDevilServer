@@ -60,7 +60,7 @@ void TcpServer::incomingConnection(qintptr handle) {
     if(socketList.isEmpty()) {
         client = new TcpSocket(&bufferList, this);
         connect(client, &TcpSocket::receive, this, &TcpServer::clientReceive);
-        connect(client, &TcpSocket::disconnected, this, &TcpServer::clientDisconnected);
+        connect(client, &TcpSocket::connectBreak, this, &TcpServer::clientDisconnected);
     } else {
         client = socketList.last();
         socketList.removeLast();
@@ -72,7 +72,7 @@ void TcpServer::incomingConnection(qintptr handle) {
     key[2] = QRandomGenerator::global()->generate();
     key[3] = QRandomGenerator::global()->generate();
     key[4] = QRandomGenerator::global()->generate();
-    qDebug("%u %u %u %u", key[1], key[2], key[3], key[4]);
+    //qDebug("%u %u %u %u", key[1], key[2], key[3], key[4]);
     client->aes.setKey((char *)&key[1]);
     client->write((char *)key, sizeof(key));
     emit connection(client);

@@ -330,12 +330,56 @@ void MainWindow::receive(TcpSocket *client, int signal, char *data, int count) {
             for(int i = 0; i < 12; i++) {
                 localGameData->qinForId[i] = 0;
             }
+            for(int i = 0; i < 4; i++) {
+                localGameData->hitKeyClientId[i] = 0;
+            }
             int index = 0;
             TcpSocket *tempClient;
             while((tempClient = localGameData->getClient(index))) {
                 Buffer *sendBuffer = server.getSendBuffer(5, sizeof(sendData));
                 server.writeBuffer(&sendBuffer, (char *)&sendData, sizeof(sendData));
                 server.sendBuffer(tempClient, sendBuffer);
+            }
+            break;
+        }
+        case 7: {
+            structure_hitKeyNumber *receiveData = (structure_hitKeyNumber *)data;
+            int localId = localGameData->hitKeyClientId[receiveData->qinId];
+            if(localId == 0 || localId == client->id) {
+                localGameData->hitKeyClientId[receiveData->qinId] = client->id;
+                Buffer *sendBuffer = server.getSendBuffer(7, 0);
+                server.sendBuffer(client, sendBuffer);
+            } else {
+                structure_askHitKeyIndex sendData;
+                sendData.clientId = client->id;
+                sendData.time = receiveData->time;
+                int index = 0;
+                TcpSocket *tempClient;
+                while((tempClient = localGameData->getClient(index))) {
+                    if(tempClient->id == localId) {
+                        Buffer *sendBuffer = server.getSendBuffer(8, sizeof(sendData));
+                        server.writeBuffer(&sendBuffer, (char *)&sendData, sizeof(sendData));
+                        server.sendBuffer(tempClient, sendBuffer);
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        case 8: {
+            structure_replyHitKeyIndex *receiveData = (structure_replyHitKeyIndex *)data;
+            structure_hitKeyIndex sendData;
+            sendData.index = receiveData->index;
+            sendData.time = receiveData->time;
+            int index = 0;
+            TcpSocket *tempClient;
+            while((tempClient = localGameData->getClient(index))) {
+                if(tempClient->id == receiveData->clientId) {
+                    Buffer *sendBuffer = server.getSendBuffer(9, sizeof(sendData));
+                    server.writeBuffer(&sendBuffer, (char *)&sendData, sizeof(sendData));
+                    server.sendBuffer(tempClient, sendBuffer);
+                    break;
+                }
             }
             break;
         }

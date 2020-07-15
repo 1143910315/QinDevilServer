@@ -23,9 +23,11 @@ private:
     BufferList *const bufferList;
     int dataLength = 0;
     int effectiveDataLength;
-    Buffer *buffer;
+    Buffer *buffer = nullptr;
+    void onDisconnected();
 signals:
     void receive(int signal, char *data, int count);
+    void connectBreak();
 };
 
 #endif // TCPSOCKET_H

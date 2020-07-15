@@ -36,7 +36,17 @@ void TcpSocket::receiveData() {
                 aes.decode(buffer->buffer + 4, buffer->length - 4);
                 emit receive(*((int *)buffer->buffer), buffer->buffer + 4, effectiveDataLength);
                 bufferList->setBuffer(buffer);
+                buffer = nullptr;
             }
         }
     }
+}
+
+void TcpSocket::onDisconnected() {
+    dataLength = 0;
+    if(buffer != nullptr) {
+        bufferList->setBuffer(buffer);
+        buffer = nullptr;
+    }
+    emit connectBreak();
 }

@@ -23,12 +23,14 @@ public:
     void clearRepairKey();
     int line;
     long long time;
-    unsigned short lessKey[16] = {0};
+    unsigned short lessKey[16] {};
     int qinForId[12] = {0};
+    int hitKeyClientId[4] {};
     //QMap<int, QString> idMapName;
 private:
     QVector<repairKey *> repairKeyListUseless;
     QVector<TcpSocket *> clientList;
+
 signals:
 
 };
